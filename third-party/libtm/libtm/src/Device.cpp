@@ -579,7 +579,7 @@ namespace perc {
 
         Control_Message msg((uint8_t*)&request, sizeof(request));
      
-        DEVICELOGD("Reseting device");
+        DEVICELOGW("Resetting device");
 
         /* Calling onControlMessage */
         mDispatcher->sendMessage(&mFsm, msg);
@@ -2872,6 +2872,13 @@ namespace perc {
             result = libusb_interrupt_transfer(mDevice, mEndpointInterrupt, msgBuffer, BUFFER_SIZE, &actual, 100);
             if (result == LIBUSB_ERROR_TIMEOUT)
             {
+                continue;
+            }
+
+            if (result == LIBUSB_ERROR_IO && actual == 0)
+            {
+                // This error occurs at startup and reconnect under MacOS, appears to be non-fatal
+                DEVICELOGE("FW unresponsive - got error in interrupt endpoint thread function: status = %d (%s), actual = %d", result, libusb_error_name(result), actual);
                 continue;
             }
 
